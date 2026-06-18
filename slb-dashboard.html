@@ -1,0 +1,1026 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>SLB Dashboard</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Syne:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --ff:'Syne',sans-serif;--mono:'JetBrains Mono',monospace;
+  --navy:#1E3A5F;--blue:#185FA5;--teal:#0F6E56;
+  --amber:#B45309;--red:#A32D2D;--green:#3B6D11;
+  --teal-l:#E1F5EE;--blue-l:#E6F1FB;--amber-l:#FAEEDA;--red-l:#FCEBEB;
+  --bg:#fff;--bg2:#F8FAFC;--bg3:#F1EFF8;
+  --txt:#1E293B;--txt2:#475569;--brd:#e2e8f0;--brd2:#cbd5e1;
+  --radius:8px;--radius-lg:12px;
+}
+@media(prefers-color-scheme:dark){:root{
+  --bg:#0f1117;--bg2:#1a1d27;--bg3:#22263a;
+  --txt:#e2e8f0;--txt2:#94a3b8;--brd:#1e2535;--brd2:#2d3748;
+  --blue-l:#0c1929;--teal-l:#071a12;--amber-l:#1a1000;--red-l:#1a0808;
+}}
+body{font-family:var(--ff);background:var(--bg3);color:var(--txt);min-height:100vh}
+.shell{max-width:1300px;margin:0 auto;padding:1.5rem}
+.card{background:var(--bg);border:.5px solid var(--brd);border-radius:var(--radius-lg)}
+
+/* topbar */
+.topbar{display:flex;align-items:center;justify-content:space-between;
+  padding:1rem 1.4rem;border-bottom:.5px solid var(--brd);margin-bottom:1.2rem}
+.brand{display:flex;align-items:center;gap:12px}
+.brand-icon{width:36px;height:36px;background:var(--navy);border-radius:10px;
+  display:flex;align-items:center;justify-content:center;
+  animation:breathe 3s ease-in-out infinite;flex-shrink:0}
+@keyframes breathe{0%,100%{box-shadow:0 0 0 0 rgba(30,58,95,.35)}50%{box-shadow:0 0 0 8px rgba(30,58,95,0)}}
+.brand-icon i{color:#fff;font-size:18px}
+.brand-name{font-size:17px;font-weight:700;color:var(--txt);letter-spacing:-.3px}
+.brand-sub{font-size:11px;color:var(--txt2);margin-top:1px}
+.topbar-right{display:flex;align-items:center;gap:8px}
+.sys-badge{font-size:11px;font-weight:500;padding:5px 14px;border-radius:20px;
+  display:flex;align-items:center;gap:6px;transition:all .3s}
+.sys-badge.online{background:var(--teal-l);color:var(--teal)}
+.sys-badge.warn{background:var(--amber-l);color:var(--amber)}
+.sys-badge.down{background:var(--red-l);color:var(--red)}
+.sys-badge.connecting{background:var(--blue-l);color:var(--blue)}
+.pulse-dot{width:6px;height:6px;border-radius:50%;background:currentColor;animation:blink 1.4s infinite;flex-shrink:0}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.cfg-btn,.mode-toggle{font-size:12px;padding:6px 14px;border:.5px solid var(--brd2);
+  border-radius:var(--radius);background:var(--bg);color:var(--txt);cursor:pointer;
+  font-family:var(--ff);display:flex;align-items:center;gap:5px;transition:all .15s}
+.cfg-btn:hover,.mode-toggle:hover{background:var(--bg2);border-color:var(--navy);color:var(--navy)}
+.mode-pill{font-size:10px;padding:3px 10px;border-radius:20px;font-weight:600;letter-spacing:.05em}
+.mode-live{background:var(--teal-l);color:var(--teal)}
+.mode-sim{background:var(--amber-l);color:var(--amber)}
+
+/* config panel */
+.cfg-panel{background:var(--bg);border:.5px solid var(--brd);border-radius:var(--radius-lg);
+  padding:1rem 1.4rem;margin-bottom:1.2rem;display:none}
+.cfg-panel.open{display:block}
+.cfg-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:10px}
+.cfg-field label{font-size:10px;font-weight:600;color:var(--txt2);display:block;
+  margin-bottom:4px;letter-spacing:.06em;text-transform:uppercase}
+.cfg-field input{width:100%;font-size:13px;font-family:var(--mono);padding:7px 10px;
+  border:.5px solid var(--brd2);border-radius:var(--radius);background:var(--bg);color:var(--txt)}
+.cfg-field input:focus{outline:none;border-color:var(--navy);box-shadow:0 0 0 3px rgba(30,58,95,.08)}
+.cfg-actions{display:flex;gap:8px;flex-wrap:wrap}
+.cfg-connect{padding:8px 20px;font-size:13px;font-weight:600;font-family:var(--ff);
+  background:var(--navy);color:#fff;border:none;border-radius:var(--radius);
+  cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .18s}
+.cfg-connect:hover{background:#2a4d78}
+.cfg-sim{padding:8px 16px;font-size:13px;font-weight:600;font-family:var(--ff);
+  background:transparent;color:var(--amber);border:.5px solid var(--amber);
+  border-radius:var(--radius);cursor:pointer;display:flex;align-items:center;gap:6px}
+.cfg-sim:hover{background:var(--amber-l)}
+.conn-status{font-size:12px;padding:6px 12px;border-radius:var(--radius);
+  background:var(--bg2);color:var(--txt2);display:flex;align-items:center;gap:6px;font-family:var(--mono)}
+.cfg-code{margin-top:.9rem;font-size:11px;color:var(--txt2);line-height:1.7;
+  background:var(--bg2);padding:.7rem 1rem;border-radius:var(--radius);font-family:var(--mono)}
+
+/* metrics */
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:1.2rem}
+.met{background:var(--bg);border:.5px solid var(--brd);border-radius:var(--radius-lg);
+  padding:.9rem 1.1rem;position:relative;overflow:hidden;transition:border .15s}
+.met:hover{border-color:var(--brd2)}
+.met-label{font-size:10px;font-weight:600;color:var(--txt2);letter-spacing:.08em;
+  text-transform:uppercase;margin-bottom:6px}
+.met-val{font-size:26px;font-weight:700;color:var(--txt);line-height:1;font-family:var(--mono)}
+.met-sub{font-size:10px;margin-top:5px;display:flex;align-items:center;gap:4px}
+.met-sub.ok{color:var(--green)}.met-sub.warn{color:var(--amber)}.met-sub.err{color:var(--red)}.met-sub.info{color:var(--blue)}
+.met-flash{position:absolute;inset:0;background:rgba(30,58,95,.05);opacity:0;pointer-events:none}
+@keyframes metFlash{0%{opacity:1}100%{opacity:0}}
+.met-flash.fire{animation:metFlash .4s ease forwards}
+
+/* body */
+.body-grid{display:grid;grid-template-columns:1fr 320px;gap:1.2rem}
+.sec{background:var(--bg);border:.5px solid var(--brd);border-radius:var(--radius-lg);
+  padding:1rem 1.2rem;margin-bottom:1.2rem}
+.sec-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:.9rem}
+.sec-title{font-size:11px;font-weight:600;color:var(--txt2);letter-spacing:.08em;
+  text-transform:uppercase;display:flex;align-items:center;gap:6px}
+.sec-title i{font-size:15px}
+
+/* strategies */
+.algo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:.6rem}
+@media(min-width:900px){.algo-grid{grid-template-columns:repeat(4,1fr)}}
+.algo-card{padding:.6rem .8rem;border:.5px solid var(--brd);border-radius:var(--radius);
+  cursor:pointer;transition:all .18s;background:var(--bg);position:relative}
+.algo-card:hover{border-color:var(--brd2);background:var(--bg2)}
+.algo-card.active{border-color:var(--navy);background:var(--blue-l)}
+.algo-card.auto-active{border-color:var(--teal);background:var(--teal-l) !important}
+.algo-name{font-size:11.5px;font-weight:600;color:var(--txt);display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.algo-card.active .algo-name{color:var(--navy)}
+.algo-card.auto-active .algo-name{color:var(--teal)}
+.algo-tag{font-size:9.5px;color:var(--txt2);margin-top:2px}
+.algo-card.active .algo-tag{color:var(--blue)}
+.algo-card.auto-active .algo-tag{color:var(--teal)}
+.badge-new{font-size:8.5px;font-weight:700;background:var(--teal-l);color:var(--teal);
+  padding:1px 5px;border-radius:4px;letter-spacing:.04em;flex-shrink:0}
+.badge-auto{font-size:8.5px;font-weight:700;background:#7C3AED22;color:#7C3AED;
+  padding:1px 5px;border-radius:4px;letter-spacing:.04em;flex-shrink:0}
+.algo-info-bar{font-size:11px;color:var(--txt2);padding:.5rem .8rem;
+  background:var(--bg2);border-radius:var(--radius);border-left:2.5px solid var(--blue);
+  line-height:1.6;margin-bottom:.5rem;display:none}
+
+/* AUTO mode banner */
+.auto-banner{background:linear-gradient(135deg,#0F6E5608,#185FA508);
+  border:.5px solid var(--teal);border-radius:var(--radius);padding:.65rem 1rem;
+  margin-bottom:.75rem;display:none;align-items:center;justify-content:space-between;gap:8px}
+.auto-banner.show{display:flex}
+.auto-banner-left{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--teal);font-weight:500}
+.auto-banner-reason{font-size:11px;color:var(--txt2);font-family:var(--mono)}
+.auto-off-btn{font-size:11px;padding:4px 12px;border:.5px solid var(--brd2);border-radius:20px;
+  cursor:pointer;background:var(--bg);color:var(--txt);font-family:var(--ff);transition:all .15s}
+.auto-off-btn:hover{border-color:var(--red);color:var(--red)}
+
+/* workers */
+.workers-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.wcard{border:.5px solid var(--brd);border-radius:var(--radius-lg);
+  padding:.9rem;background:var(--bg);transition:all .2s;position:relative;overflow:hidden}
+.wcard:hover{border-color:var(--brd2)}
+.wcard.dead{opacity:.45;filter:grayscale(.7)}
+.wcard-ripple{position:absolute;inset:0;background:rgba(15,110,86,.07);
+  opacity:0;pointer-events:none;transition:opacity .12s}
+.wcard-ripple.show{opacity:1}
+.wcard-top{display:flex;align-items:flex-start;justify-content:space-between}
+.wcard-id{font-size:13px;font-weight:600;color:var(--txt);font-family:var(--mono)}
+.wcard-addr{font-size:10px;color:var(--txt2);margin-top:2px;font-family:var(--mono)}
+.sdot{width:8px;height:8px;border-radius:50%;margin-top:3px;flex-shrink:0}
+.sdot.ok{background:#1D9E75;box-shadow:0 0 0 3px rgba(29,158,117,.18)}
+.sdot.warn{background:#EF9F27;box-shadow:0 0 0 3px rgba(239,159,39,.18)}
+.sdot.err{background:#E24B4A;box-shadow:0 0 0 3px rgba(226,75,74,.18)}
+.sdot.dead{background:var(--txt2)}
+.wcard-stats{display:flex;gap:14px;margin-top:.65rem}
+.wstat{font-size:10px;color:var(--txt2)}
+.wstat b{font-size:15px;font-weight:700;color:var(--txt);display:block;font-family:var(--mono)}
+.wcard-bar{margin-top:.65rem;height:3px;background:var(--brd);border-radius:2px;overflow:hidden}
+.wbar-fill{height:100%;border-radius:2px;transition:width .5s cubic-bezier(.4,0,.2,1)}
+.wcard-status{font-size:10px;color:var(--teal);margin-top:5px}
+.wcard-status.dead{color:var(--txt2)}
+
+/* actions */
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+.abtn{font-size:12px;padding:7px 14px;border:.5px solid var(--brd2);border-radius:var(--radius);
+  background:var(--bg);color:var(--txt);cursor:pointer;font-family:var(--ff);
+  display:flex;align-items:center;gap:5px;transition:all .15s}
+.abtn:hover{background:var(--bg2);border-color:var(--navy);color:var(--navy)}
+.abtn.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+.abtn.primary:hover{background:#2a4d78}
+.abtn.auto-btn{background:linear-gradient(135deg,#0F6E56,#185FA5);color:#fff;border:none}
+.abtn.auto-btn:hover{opacity:.9;transform:translateY(-1px)}
+.abtn.auto-btn.on{background:linear-gradient(135deg,#A32D2D,#B45309);color:#fff}
+.abtn i{font-size:13px}
+
+/* distribution */
+.dist-bar{display:flex;height:8px;border-radius:4px;overflow:hidden;gap:1px;margin:.5rem 0}
+.dist-seg{transition:flex .5s cubic-bezier(.4,0,.2,1);min-width:2px}
+.dist-legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:4px}
+.dist-item{font-size:10px;color:var(--txt2);display:flex;align-items:center;gap:5px;font-family:var(--mono)}
+.dist-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+
+/* log */
+.log-box{background:var(--bg2);border:.5px solid var(--brd);border-radius:var(--radius);
+  height:160px;overflow-y:auto;padding:.7rem .9rem;font-family:var(--mono);
+  font-size:11px;line-height:1.9}
+.log-line{display:flex;gap:8px;animation:slideIn .22s ease}
+@keyframes slideIn{from{opacity:0;transform:translateX(-5px)}to{opacity:1;transform:translateX(0)}}
+.lt{color:var(--txt2);min-width:56px;flex-shrink:0}
+.li{color:#185FA5}.lo{color:#3B6D11}.lw{color:#B45309}.le{color:#A32D2D}.lp{color:#7C3AED}
+
+/* controls */
+.wctrl-row{display:flex;align-items:center;gap:6px;padding:.5rem 0;
+  border-bottom:.5px solid var(--brd);flex-wrap:wrap}
+.wctrl-row:last-child{border-bottom:none}
+.wctrl-name{font-size:11px;font-family:var(--mono);font-weight:600;color:var(--txt);min-width:70px;flex-shrink:0}
+.cbtn{font-size:11px;padding:4px 10px;border-radius:20px;cursor:pointer;font-family:var(--ff);
+  display:flex;align-items:center;gap:4px;border:.5px solid var(--brd2);
+  background:transparent;color:var(--txt);transition:all .15s;white-space:nowrap}
+.cbtn:hover{background:var(--bg2)}
+.cbtn.slow{background:var(--amber-l);color:var(--amber);border-color:var(--amber)}
+.cbtn.err{background:var(--red-l);color:var(--red);border-color:var(--red)}
+.cbtn.kill{background:var(--red-l);color:var(--red);border-color:var(--red)}
+.cbtn.live{background:var(--teal-l);color:var(--teal);border-color:var(--teal)}
+.cbtn i{font-size:11px}
+
+/* add form */
+.add-form{border:.5px dashed var(--brd2);border-radius:var(--radius-lg);
+  padding:1rem;background:var(--bg2);transition:all .2s}
+.add-form:hover{border-color:var(--navy)}
+.add-form-title{font-size:12px;font-weight:600;color:var(--txt);margin-bottom:.8rem;
+  display:flex;align-items:center;gap:6px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+.form-field label{font-size:10px;font-weight:600;color:var(--txt2);display:block;
+  margin-bottom:4px;letter-spacing:.05em;text-transform:uppercase}
+.form-field input{width:100%;font-size:12px;font-family:var(--mono);padding:7px 10px;
+  border:.5px solid var(--brd2);border-radius:var(--radius);background:var(--bg);color:var(--txt)}
+.form-field input:focus{outline:none;border-color:var(--navy);box-shadow:0 0 0 2px rgba(30,58,95,.1)}
+.add-btn{width:100%;padding:9px;font-size:12px;font-weight:600;font-family:var(--ff);
+  background:var(--navy);color:#fff;border:none;border-radius:var(--radius);
+  cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:all .18s;margin-top:6px}
+.add-btn:hover{background:#2a4d78;transform:translateY(-1px)}
+.add-btn:active{transform:scale(.98)}
+
+/* toast */
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(70px);
+  background:var(--navy);color:#fff;font-size:12px;padding:8px 20px;border-radius:20px;
+  font-family:var(--mono);transition:transform .25s cubic-bezier(.4,0,.2,1);
+  pointer-events:none;white-space:nowrap;z-index:999;box-shadow:0 4px 20px rgba(0,0,0,.2)}
+.toast.show{transform:translateX(-50%) translateY(0)}
+
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--brd2);border-radius:2px}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<div class="topbar card">
+  <div class="brand">
+    <div class="brand-icon"><i class="ti ti-topology-star"></i></div>
+    <div>
+      <div class="brand-name">SLB Platform</div>
+      <div class="brand-sub">Smart Load Balancer · Distributed Systems · 11 Strategies</div>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <span class="mode-pill mode-sim" id="mode-pill">SIMULATION</span>
+    <span class="sys-badge connecting" id="sys-badge"><span class="pulse-dot"></span> connecting…</span>
+    <button class="cfg-btn" onclick="toggleCfg()"><i class="ti ti-settings"></i> configure</button>
+  </div>
+</div>
+
+<div class="cfg-panel card" id="cfg-panel">
+  <div style="font-size:13px;font-weight:600;color:var(--txt);margin-bottom:.9rem;display:flex;align-items:center;gap:7px">
+    <i class="ti ti-plug" style="font-size:16px;color:var(--blue)"></i>
+    Backend Connection
+  </div>
+  <div class="cfg-grid">
+    <div class="cfg-field"><label>Registry URL</label><input type="text" id="cfg-registry" value="http://localhost:3001"/></div>
+    <div class="cfg-field"><label>Load Balancer URL</label><input type="text" id="cfg-lb" value="http://localhost:3000"/></div>
+    <div class="cfg-field"><label>Poll Interval (ms)</label><input type="number" id="cfg-poll" value="3000" min="1000" max="30000"/></div>
+  </div>
+  <div class="cfg-actions">
+    <button class="cfg-connect" onclick="connectBackend()"><i class="ti ti-plug"></i> connect</button>
+    <button class="cfg-sim" onclick="useSimulation()"><i class="ti ti-cpu"></i> simulation mode</button>
+    <div class="conn-status" id="conn-status"><i class="ti ti-info-circle"></i> not connected</div>
+  </div>
+  <div class="cfg-code">
+    # PowerShell — start backend:<br>
+    npm run dev -w packages/registry<br>
+    $env:REGISTRY_URL="http://localhost:3001"; npm run dev -w packages/load-balancer<br>
+    $env:WORKER_ID="worker-1"; $env:PORT="4001"; $env:REGISTRY_URL="http://localhost:3001"; npm run dev -w packages/worker<br><br>
+    # CORS fix — load-balancer/src/server.ts:<br>
+    # app.use(cors({ origin:'*', exposedHeaders:['X-Worker-Id','X-Strategy','X-Latency-Ms'] }));<br>
+    # New strategies: add to shared/types/index.ts + strategy.registry.ts
+  </div>
+</div>
+
+<div class="metrics">
+  <div class="met"><div class="met-flash" id="mf-0"></div>
+    <div class="met-label">total requests</div>
+    <div class="met-val" id="mv-total">0</div>
+    <div class="met-sub ok" id="ms-rps"><i class="ti ti-trending-up"></i> ready</div>
+  </div>
+  <div class="met"><div class="met-flash" id="mf-1"></div>
+    <div class="met-label">avg latency</div>
+    <div class="met-val" id="mv-lat">—</div>
+    <div class="met-sub info" id="ms-lat">no data yet</div>
+  </div>
+  <div class="met"><div class="met-flash" id="mf-2"></div>
+    <div class="met-label">healthy workers</div>
+    <div class="met-val" id="mv-health">—</div>
+    <div class="met-sub ok" id="ms-health">loading</div>
+  </div>
+  <div class="met"><div class="met-flash" id="mf-3"></div>
+    <div class="met-label">active strategy</div>
+    <div class="met-val" style="font-size:13px;padding-top:6px" id="mv-strat">—</div>
+    <div class="met-sub info" id="ms-strat">—</div>
+  </div>
+</div>
+
+<div class="body-grid">
+<div>
+
+  <div class="sec">
+    <div class="sec-hdr">
+      <div class="sec-title"><i class="ti ti-cpu"></i> routing strategy</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <div id="strat-status" style="font-size:11px;color:var(--txt2)"></div>
+        <button class="abtn auto-btn" id="auto-btn" onclick="toggleAuto()">
+          <i class="ti ti-robot"></i> auto select
+        </button>
+      </div>
+    </div>
+    <div class="auto-banner" id="auto-banner">
+      <div class="auto-banner-left"><i class="ti ti-robot"></i> auto mode active</div>
+      <div class="auto-banner-reason" id="auto-reason">analysing…</div>
+      <button class="auto-off-btn" onclick="toggleAuto()">disable</button>
+    </div>
+    <div class="algo-grid" id="algo-grid"></div>
+    <div class="algo-info-bar" id="algo-info"></div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-hdr">
+      <div class="sec-title"><i class="ti ti-server"></i> workers</div>
+      <div class="actions">
+        <button class="abtn primary" onclick="sendBatch(9)"><i class="ti ti-send"></i> send 9</button>
+        <button class="abtn" onclick="sendBatch(1)"><i class="ti ti-send"></i> send 1</button>
+        <button class="abtn" onclick="sendBatch(30)"><i class="ti ti-player-play"></i> burst 30</button>
+        <button class="abtn" onclick="refreshWorkers()"><i class="ti ti-refresh"></i> refresh</button>
+      </div>
+    </div>
+    <div class="workers-grid" id="workers-grid"></div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-hdr"><div class="sec-title"><i class="ti ti-chart-bar"></i> request distribution</div></div>
+    <div class="dist-bar" id="dist-bar"></div>
+    <div class="dist-legend" id="dist-legend"></div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-hdr">
+      <div class="sec-title"><i class="ti ti-terminal"></i> system log</div>
+      <button class="abtn" onclick="clearLog()" style="padding:3px 10px;font-size:11px"><i class="ti ti-trash"></i> clear</button>
+    </div>
+    <div class="log-box" id="log-box"></div>
+  </div>
+
+</div>
+<div>
+
+  <div class="sec" style="margin-bottom:1.2rem">
+    <div class="sec-hdr"><div class="sec-title"><i class="ti ti-tool"></i> worker controls</div></div>
+    <div id="wctrl-list"></div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-hdr"><div class="sec-title"><i class="ti ti-circle-plus"></i> add worker</div></div>
+    <div class="add-form">
+      <div class="add-form-title"><i class="ti ti-server-bolt" style="font-size:15px"></i> register new worker</div>
+      <div class="form-row">
+        <div class="form-field"><label>worker id</label><input type="text" id="f-id" placeholder="worker-4"/></div>
+        <div class="form-field"><label>port</label><input type="number" id="f-port" placeholder="4004" min="1024" max="65535"/></div>
+      </div>
+      <div class="form-row">
+        <div class="form-field"><label>host</label><input type="text" id="f-host" placeholder="localhost"/></div>
+        <div class="form-field"><label>weight</label><input type="number" id="f-weight" placeholder="1" min="1" max="10"/></div>
+      </div>
+      <button class="add-btn" onclick="addWorker()"><i class="ti ti-plus"></i> register worker</button>
+    </div>
+  </div>
+
+</div>
+</div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════════════════════
+// CONSTANTS
+// ══════════════════════════════════════════════════════════
+const PALETTE=['#185FA5','#0F6E56','#B45309','#A32D2D','#534AB7','#854F0B','#3B6D11','#993556','#0E7490','#B91C1C'];
+const ALGOS=[
+  {name:'round-robin',        lbName:'round-robin',        tag:'even · no load awareness'},
+  {name:'random',             lbName:'random',             tag:'statistically even at scale'},
+  {name:'sequential',         lbName:'sequential',         tag:'always first healthy — testing'},
+  {name:'least-conn',         lbName:'least-connections',  tag:'fewest active requests · smart'},
+  {name:'power-of-two',       lbName:'power-of-two',       tag:'O(1) · near-optimal · Twitter/AWS'},
+  {name:'greedy',             lbName:'greedy',             tag:'latency × load score'},
+  {name:'consistent-hashing', lbName:'consistent-hashing', tag:'same key → same worker · sticky'},
+  {name:'latency-based',      lbName:'latency-based',      tag:'moving avg · fastest wins'},
+  {name:'resource-aware',     lbName:'resource-aware',     tag:'normalised load + latency score'},
+  {name:'adaptive',           lbName:'adaptive',           tag:'feedback weights · self-learning'},
+  {name:'jiq',                lbName:'jiq',                tag:'idle queue · zero-queue guarantee'},
+];
+const ALGO_DESCS={
+  'round-robin':        '↻  Round Robin — visits each worker in turn. Simple, no load awareness. Best for homogeneous requests.',
+  'random':             '🎲  Random — picks at random. Statistically even at high volume. May cause hot spots at low volume.',
+  'sequential':         '→  Sequential — always first healthy worker. Use for testing or forced routing only.',
+  'least-conn':         '📊  Least Connections — picks worker with fewest active requests. Great for variable request durations.',
+  'power-of-two':       '⚡  Power of Two Choices — sample 2 random workers, pick less loaded. O(1) near-optimal. Used by Twitter & AWS.',
+  'greedy':             '🧮  Greedy — score=(activeRequests+1)×(latency+1). Routes to lowest score. Balances load and speed.',
+  'consistent-hashing': '🔵  Consistent Hashing — virtual ring (100 vnodes/worker). Same hash → same worker. Ideal for caching & sticky sessions.',
+  'latency-based':      '⏱  Latency-Based — moving average response time per worker (α=0.3). Routes to fastest server, auto-adapts.',
+  'resource-aware':     '💡  Resource-Aware — normalises activeRequests(60%) + latency(40%) into pressure score. Least-pressured worker wins.',
+  'adaptive':           '🧠  Adaptive/Feedback — feedback weights per worker. Fast servers gain traffic share over time. Self-calibrating.',
+  'jiq':                '🟢  JIQ (Join-Idle-Queue) — routes to workers with 0 active requests first. Falls back to Least Connections.',
+};
+const ALGO_BY_LB=Object.fromEntries(ALGOS.map(a=>[a.lbName,a.name]));
+const ALGO_BY_UI=Object.fromEntries(ALGOS.map(a=>[a.name,a.lbName]));
+const NEW_ALGOS=['consistent-hashing','latency-based','resource-aware','adaptive','jiq'];
+
+// ══════════════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════════════
+let CFG={registryUrl:'http://localhost:3001',lbUrl:'http://localhost:3000',pollMs:3000};
+let MODE='simulation';
+let pollTimer=null;
+let switchingStrategy=false;
+let AUTO_MODE=false;
+let autoTimer=null;
+
+let SIM={
+  strategy:'round-robin',rrIdx:0,total:0,latencies:[],
+  workers:[
+    {id:'worker-1',host:'localhost',port:4001,weight:1,healthy:true,active:0,total:0,latency:45,slow:false,error:false,color:PALETTE[0]},
+    {id:'worker-2',host:'localhost',port:4002,weight:1,healthy:true,active:0,total:0,latency:38,slow:false,error:false,color:PALETTE[1]},
+    {id:'worker-3',host:'localhost',port:4003,weight:1,healthy:true,active:0,total:0,latency:52,slow:false,error:false,color:PALETTE[2]},
+  ],
+};
+let LIVE={strategy:'round-robin',total:0,latencies:[],workers:[]};
+const LIVE_TOTALS=new Map();
+
+// ── strategy state ────────────────────────────────────────
+const _ch={ring:new Map(),sorted:[],lastIds:''};
+const _latMap=new Map();
+const _wts=new Map();
+let _reqCtr=0;
+
+// ══════════════════════════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════════════════════════
+function ts(){const n=new Date();return[n.getHours(),n.getMinutes(),n.getSeconds()].map(x=>String(x).padStart(2,'0')).join(':');}
+function log(msg,type='info'){
+  const el=document.getElementById('log-box');
+  const d=document.createElement('div');d.className='log-line';
+  d.innerHTML=`<span class="lt">${ts()}</span><span class="l${type[0]}">${msg}</span>`;
+  el.prepend(d);while(el.children.length>120)el.removeChild(el.lastChild);
+}
+function clearLog(){document.getElementById('log-box').innerHTML='';}
+function toast(msg){
+  const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');
+  clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('show'),2400);
+}
+function flash(idx){const el=document.getElementById('mf-'+idx);if(!el)return;el.classList.remove('fire');void el.offsetWidth;el.classList.add('fire');}
+function toggleCfg(){document.getElementById('cfg-panel').classList.toggle('open');}
+function workerColor(idx){return PALETTE[idx%PALETTE.length];}
+function getState(){
+  return MODE==='live'
+    ?{workers:LIVE.workers,strategy:LIVE.strategy,total:LIVE.total,latencies:LIVE.latencies}
+    :{workers:SIM.workers, strategy:SIM.strategy, total:SIM.total, latencies:SIM.latencies};
+}
+
+// ══════════════════════════════════════════════════════════
+// API
+// ══════════════════════════════════════════════════════════
+async function apiGet(base,path){
+  const r=await fetch(base+path,{headers:{'Accept':'application/json'},signal:AbortSignal.timeout(5000)});
+  if(!r.ok)throw new Error(`${r.status} ${r.statusText}`);
+  return r.json();
+}
+async function apiPost(base,path,body){
+  return fetch(base+path,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify(body),signal:AbortSignal.timeout(8000)});
+}
+async function apiPut(base,path,body){
+  const r=await fetch(base+path,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),signal:AbortSignal.timeout(5000)});
+  if(!r.ok)throw new Error(`${r.status}`);return r.json();
+}
+async function apiDelete(base,path){await fetch(base+path,{method:'DELETE',signal:AbortSignal.timeout(3000)});}
+
+// ══════════════════════════════════════════════════════════
+// CONNECT
+// ══════════════════════════════════════════════════════════
+async function connectBackend(){
+  CFG.registryUrl=document.getElementById('cfg-registry').value.trim().replace(/\/$/,'');
+  CFG.lbUrl=document.getElementById('cfg-lb').value.trim().replace(/\/$/,'');
+  CFG.pollMs=parseInt(document.getElementById('cfg-poll').value)||3000;
+  setConnStatus('connecting…','info');log('connecting to backend…','info');
+  try{
+    const reg=await apiGet(CFG.registryUrl,'/health');if(!reg.success)throw new Error('registry failed');
+    const lb=await apiGet(CFG.lbUrl,'/health');if(!lb.success)throw new Error('lb failed');
+    const strat=await apiGet(CFG.lbUrl,'/api/lb/strategy');
+    LIVE.strategy=strat.data?.active||'round-robin';
+    MODE='live';
+    document.getElementById('mode-pill').textContent='LIVE';
+    document.getElementById('mode-pill').className='mode-pill mode-live';
+    setBadge('online','system online');setConnStatus('connected ✓','ok');
+    log('connected → registry: '+CFG.registryUrl,'ok');
+    log('connected → load balancer: '+CFG.lbUrl,'ok');
+    log('active strategy: '+LIVE.strategy,'ok');
+    toast('connected to backend');
+    document.getElementById('cfg-panel').classList.remove('open');
+    startPolling();renderAll();
+  }catch(e){
+    MODE='simulation';setBadge('down','backend unreachable');
+    setConnStatus('failed: '+e.message,'err');
+    log('connection failed: '+e.message,'err');toast('connection failed');
+  }
+}
+function useSimulation(){
+  if(pollTimer){clearInterval(pollTimer);pollTimer=null;}
+  MODE='simulation';
+  document.getElementById('mode-pill').textContent='SIMULATION';
+  document.getElementById('mode-pill').className='mode-pill mode-sim';
+  setBadge('online','simulation mode');setConnStatus('simulation — no backend needed','warn');
+  log('switched to simulation mode','warn');toast('simulation mode');
+  document.getElementById('cfg-panel').classList.remove('open');renderAll();
+}
+function setConnStatus(msg,type){
+  const icons={info:'ti-info-circle',ok:'ti-check',err:'ti-alert-triangle',warn:'ti-info-circle'};
+  document.getElementById('conn-status').innerHTML=`<i class="ti ${icons[type]||'ti-info-circle'}"></i> ${msg}`;
+}
+function setBadge(cls,msg){
+  const el=document.getElementById('sys-badge');el.className='sys-badge '+cls;
+  el.innerHTML=`<span class="pulse-dot"></span> ${msg}`;
+}
+
+// ══════════════════════════════════════════════════════════
+// POLLING
+// ══════════════════════════════════════════════════════════
+function startPolling(){if(pollTimer)clearInterval(pollTimer);pollLive();pollTimer=setInterval(pollLive,CFG.pollMs);}
+async function pollLive(){
+  if(MODE!=='live')return;
+  try{
+    const reg=await apiGet(CFG.registryUrl,'/api/registry/servers');
+    const servers=reg.data||[];
+    const prevById=Object.fromEntries(LIVE.workers.map(w=>[w.id,w]));
+    const prevByAddr=Object.fromEntries(LIVE.workers.map(w=>[w.host+':'+w.port,w]));
+    LIVE.workers=servers.map((s,i)=>{
+      const prev=prevById[s.id]||prevByAddr[s.host+':'+s.port]||{};
+      return{id:s.id,host:s.host,port:s.port,weight:s.weight||1,healthy:s.isHealthy,
+        active:s.activeRequests||0,total:LIVE_TOTALS.get(s.id)||prev.total||0,
+        latency:s.lastLatency||0,slow:prev.slow||false,error:prev.error||false,
+        color:prev.color||workerColor(i),manualReg:prev.manualReg||false};
+    });
+    const strat=await apiGet(CFG.lbUrl,'/api/lb/strategy');
+    LIVE.strategy=strat.data?.active||LIVE.strategy;
+    renderAll();flash(2);
+    if(AUTO_MODE)runAutoSelect();
+  }catch(e){log('poll error: '+e.message,'err');setBadge('warn','degraded');}
+}
+async function refreshWorkers(){if(MODE==='live'){await pollLive();toast('refreshed');}else toast('not needed in simulation');}
+
+// ══════════════════════════════════════════════════════════
+// SEND REQUESTS
+// ══════════════════════════════════════════════════════════
+async function sendBatch(n){for(let i=0;i<n;i++)setTimeout(()=>sendOne(),i*70+Math.random()*30);}
+async function sendOne(){if(MODE==='live')await sendLiveRequest();else sendSimRequest();}
+
+async function sendLiveRequest(){
+  const t0=Date.now();
+  try{
+    const r=await fetch(CFG.lbUrl+'/api/proxy',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({path:'/work',payload:{task:'dashboard',ts:Date.now()}}),
+      signal:AbortSignal.timeout(12000),
+    });
+    const lat=Date.now()-t0;
+    const data=await r.json().catch(()=>({}));
+    const workerId=data?.meta?.workerId||r.headers.get('X-Worker-Id')||'unknown';
+    const strategy=data?.meta?.strategy||r.headers.get('X-Strategy')||LIVE.strategy;
+    LIVE.total++;LIVE.latencies.push(lat);if(LIVE.latencies.length>60)LIVE.latencies.shift();
+    if(workerId!=='unknown'){
+      LIVE_TOTALS.set(workerId,(LIVE_TOTALS.get(workerId)||0)+1);
+      const w=LIVE.workers.find(x=>x.id===workerId);if(w)w.total=LIVE_TOTALS.get(workerId);
+    }
+    log(`${r.ok?'✓':'✗'} ${workerId}  ${lat}ms  [${strategy}]`,r.ok?'ok':'err');
+    flash(0);flash(1);renderAll();
+    if(AUTO_MODE)runAutoSelect();
+  }catch(e){log(`✗ request failed: ${e.message}`,'err');}
+}
+
+function sendSimRequest(){
+  const alive=SIM.workers.filter(w=>w.healthy&&!w.error);
+  if(!alive.length){log('no healthy workers — 503','err');return;}
+  const w=simPick(alive);
+  SIM.total++;w.active++;w.total++;
+  const base=w.slow?w.latency+2600+Math.random()*600:w.latency+Math.random()*40-15;
+  const lat=Math.max(4,Math.round(base));
+  log(`→ ${w.id}  via ${SIM.strategy}  (active:${w.active})`,'info');
+  flash(0);flash(1);
+  setTimeout(()=>{
+    w.active=Math.max(0,w.active-1);
+    if(w.error)log(`✗ ${w.id} 500 [error mode]`,'err');
+    else{w.latency=Math.round(w.latency*.75+lat*.25);SIM.latencies.push(lat);if(SIM.latencies.length>60)SIM.latencies.shift();log(`✓ ${w.id}  ${lat}ms  [${SIM.strategy}]`,'ok');}
+    renderAll();if(AUTO_MODE)runAutoSelect();
+  },lat);
+  renderAll();
+}
+
+// ══════════════════════════════════════════════════════════
+// STRATEGY PICKING — 11 algorithms
+// ══════════════════════════════════════════════════════════
+function _hashStr(s){let h=0;for(let i=0;i<s.length;i++){h=((h<<5)-h)+s.charCodeAt(i);h|=0;}return Math.abs(h)%1000000;}
+
+function _chPick(a){
+  const ids=a.map(w=>w.id).sort().join(',');
+  if(ids!==_ch.lastIds){
+    _ch.ring.clear();_ch.sorted.length=0;_ch.lastIds=ids;
+    a.forEach(w=>{for(let v=0;v<100;v++){const p=_hashStr(w.id+'-v'+v);_ch.ring.set(p,w.id);_ch.sorted.push(p);}});
+    _ch.sorted.sort((x,y)=>x-y);
+  }
+  const h=_hashStr(String(_reqCtr++));
+  for(const p of _ch.sorted)if(h<=p){const id=_ch.ring.get(p);return a.find(w=>w.id===id)||a[0];}
+  return a.find(w=>w.id===_ch.ring.get(_ch.sorted[0]))||a[0];
+}
+function _latPick(a){
+  a.forEach(w=>{const p=_latMap.get(w.id);_latMap.set(w.id,p===undefined?w.latency:p*.7+w.latency*.3);});
+  return a.reduce((b,c)=>(_latMap.get(b.id)||100)<=(_latMap.get(c.id)||100)?b:c);
+}
+function _resPick(a){
+  const mR=Math.max(...a.map(w=>w.active),1),mL=Math.max(...a.map(w=>w.latency),1);
+  return a.reduce((b,c)=>{
+    const sb=(b.active/mR)*.6+(b.latency/mL)*.4,sc=(c.active/mR)*.6+(c.latency/mL)*.4;
+    return sb<=sc?b:c;
+  });
+}
+function _adaptPick(a){
+  a.forEach(w=>{if(!_wts.has(w.id))_wts.set(w.id,1.0);});
+  const avg=a.reduce((s,w)=>s+w.latency,0)/a.length;
+  a.forEach(w=>{const c=_wts.get(w.id),r=avg/(w.latency||1);_wts.set(w.id,Math.max(.1,Math.min(5,c+.15*(r-1))));});
+  const tot=a.reduce((s,w)=>s+(_wts.get(w.id)||1),0);
+  let r=Math.random()*tot;for(const w of a){r-=_wts.get(w.id)||1;if(r<=0)return w;}
+  return a[a.length-1];
+}
+function _jiqPick(a){
+  const idle=a.filter(w=>w.active===0);
+  if(idle.length)return idle[Math.floor(Math.random()*idle.length)];
+  return a.reduce((b,c)=>b.active<=c.active?b:c);
+}
+
+function simPick(alive){
+  switch(SIM.strategy){
+    case 'round-robin':{const w=alive[SIM.rrIdx%alive.length];SIM.rrIdx++;return w;}
+    case 'random':return alive[Math.floor(Math.random()*alive.length)];
+    case 'sequential':return alive[0];
+    case 'least-conn':return alive.reduce((a,b)=>a.active<=b.active?a:b);
+    case 'power-of-two':{
+      if(alive.length===1)return alive[0];
+      const i=Math.floor(Math.random()*alive.length);
+      let j;do{j=Math.floor(Math.random()*alive.length);}while(j===i);
+      return alive[i].active<=alive[j].active?alive[i]:alive[j];
+    }
+    case 'greedy':return alive.reduce((a,b)=>(a.active+1)*(a.latency+1)<=(b.active+1)*(b.latency+1)?a:b);
+    case 'consistent-hashing':return _chPick(alive);
+    case 'latency-based':return _latPick(alive);
+    case 'resource-aware':return _resPick(alive);
+    case 'adaptive':return _adaptPick(alive);
+    case 'jiq':return _jiqPick(alive);
+    default:return alive[0];
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+// AUTO STRATEGY SELECTOR
+// ══════════════════════════════════════════════════════════
+function toggleAuto(){
+  AUTO_MODE=!AUTO_MODE;
+  const btn=document.getElementById('auto-btn');
+  const banner=document.getElementById('auto-banner');
+  if(AUTO_MODE){
+    btn.classList.add('on');btn.innerHTML='<i class="ti ti-robot"></i> auto: ON';
+    banner.classList.add('show');
+    log('AUTO MODE enabled — strategy will be selected automatically','purple');
+    toast('auto mode on');runAutoSelect();
+    autoTimer=setInterval(runAutoSelect,5000);
+  }else{
+    btn.classList.remove('on');btn.innerHTML='<i class="ti ti-robot"></i> auto select';
+    banner.classList.remove('show');
+    log('AUTO MODE disabled','warn');toast('auto mode off');
+    clearInterval(autoTimer);autoTimer=null;
+  }
+  renderAll();
+}
+
+function runAutoSelect(){
+  const {workers,latencies}=getState();
+  const alive=workers.filter(w=>w.healthy);
+  if(!alive.length)return;
+
+  // ── gather metrics ────────────────────────────────────
+  const latVals=alive.map(w=>w.latency||0);
+  const activeVals=alive.map(w=>w.active||0);
+  const totalReqs=alive.reduce((s,w)=>s+w.total,0);
+
+  const avgLat=latVals.reduce((a,b)=>a+b,0)/latVals.length||0;
+  const maxLat=Math.max(...latVals,0);
+  const minLat=Math.min(...latVals,0);
+  const latVariance=maxLat-minLat;
+
+  const avgActive=activeVals.reduce((a,b)=>a+b,0)/activeVals.length||0;
+  const maxActive=Math.max(...activeVals,0);
+  const idleCount=alive.filter(w=>w.active===0).length;
+
+  const recentLats=latencies.slice(-20);
+  const recentAvg=recentLats.length?recentLats.reduce((a,b)=>a+b,0)/recentLats.length:0;
+  const traffic=totalReqs>0?totalReqs:'low';
+
+  let chosen='round-robin';
+  let reason='';
+
+  // ── decision tree ─────────────────────────────────────
+  if(idleCount>=Math.ceil(alive.length*0.6)){
+    // >60% workers are idle → JIQ is best
+    chosen='jiq';
+    reason=`${idleCount}/${alive.length} workers idle → JIQ guarantees zero-queue`;
+  }
+  else if(latVariance>100){
+    if(maxActive>3&&avgActive>1){
+      // high latency variance + load → resource-aware
+      chosen='resource-aware';
+      reason=`latency spread ${latVariance}ms + avg load ${avgActive.toFixed(1)} → resource-aware`;
+    } else {
+      // high latency variance, low load → latency-based
+      chosen='latency-based';
+      reason=`latency spread ${latVariance}ms (${minLat}ms–${maxLat}ms) → latency-based`;
+    }
+  }
+  else if(maxActive>5){
+    if(alive.length>=3){
+      // high load, multiple workers → power-of-two
+      chosen='power-of-two';
+      reason=`max active ${maxActive} requests, ${alive.length} workers → power-of-two`;
+    } else {
+      chosen='least-conn';
+      reason=`high load (max ${maxActive} active) → least connections`;
+    }
+  }
+  else if(recentAvg>200){
+    // slow responses recently → adaptive to learn from feedback
+    chosen='adaptive';
+    reason=`recent avg latency ${Math.round(recentAvg)}ms → adaptive/feedback weights`;
+  }
+  else if(alive.length>4&&totalReqs>50){
+    // large cluster, high traffic → consistent hashing for cache locality
+    chosen='consistent-hashing';
+    reason=`${alive.length} workers, ${totalReqs} requests → consistent-hashing for cache locality`;
+  }
+  else if(avgActive<0.5&&latVariance<30){
+    // low load, uniform latency → round-robin is optimal
+    chosen='round-robin';
+    reason=`low load (avg ${avgActive.toFixed(1)} active), uniform latency → round-robin`;
+  }
+  else{
+    chosen='greedy';
+    reason=`mixed conditions → greedy balances load and latency`;
+  }
+
+  // apply if different from current
+  const current=MODE==='live'?(ALGO_BY_LB[LIVE.strategy]||LIVE.strategy):SIM.strategy;
+  document.getElementById('auto-reason').textContent=`→ ${chosen}: ${reason}`;
+
+  if(chosen!==current){
+    log(`🤖 AUTO → ${chosen}  (${reason})`,'purple');
+    applyStrategy(chosen);
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+// STRATEGY SWITCH
+// ══════════════════════════════════════════════════════════
+async function setStrategy(uiName){
+  if(switchingStrategy)return;
+  applyStrategy(uiName);
+}
+
+async function applyStrategy(uiName){
+  const lbName=ALGO_BY_UI[uiName];
+  if(!lbName)return;
+  if(MODE==='live'){
+    switchingStrategy=true;
+    document.getElementById('strat-status').innerHTML='<span style="display:inline-block;width:10px;height:10px;border:1.5px solid #94a3b8;border-top-color:var(--blue);border-radius:50%;animation:metFlash .7s linear infinite"></span> switching…';
+    try{
+      await apiPut(CFG.lbUrl,'/api/lb/strategy',{name:lbName});
+      LIVE.strategy=lbName;
+      log(`strategy → ${lbName}  [live]`,'warn');toast('strategy: '+lbName);
+      showAlgoInfo(uiName);await pollLive();
+    }catch(e){log('strategy switch failed: '+e.message,'err');toast('switch failed');}
+    switchingStrategy=false;document.getElementById('strat-status').textContent='';
+  }else{
+    SIM.strategy=uiName;
+    log(`strategy → ${uiName}  [simulation]`,'warn');toast('strategy: '+uiName);
+    showAlgoInfo(uiName);
+  }
+  flash(3);renderAll();
+}
+
+function showAlgoInfo(name){
+  const el=document.getElementById('algo-info');if(!el)return;
+  const t=ALGO_DESCS[name];
+  if(t){el.textContent=t;el.style.display='block';}else el.style.display='none';
+}
+
+// ══════════════════════════════════════════════════════════
+// ADD / REMOVE WORKERS
+// ══════════════════════════════════════════════════════════
+async function addWorker(){
+  const id=(document.getElementById('f-id').value||'').trim()||`worker-${(MODE==='live'?LIVE.workers:SIM.workers).length+1}`;
+  const port=parseInt(document.getElementById('f-port').value)||(4000+(MODE==='live'?LIVE.workers:SIM.workers).length+1);
+  const host=(document.getElementById('f-host').value||'localhost').trim();
+  const weight=parseInt(document.getElementById('f-weight').value)||1;
+  if(MODE==='live'){
+    try{
+      const r=await apiPost(CFG.registryUrl,'/api/registry/register',{host,port,weight});
+      if(!r.ok)throw new Error(await r.text());
+      const body=await r.json();const registryId=body.data?.id;
+      const color=workerColor(LIVE.workers.length);
+      if(registryId)LIVE.workers.push({id:registryId,host,port,weight,healthy:true,active:0,total:0,latency:50,slow:false,error:false,color,manualReg:true});
+      log(`${id} registered → ${host}:${port}  id:${registryId||'?'}  [live]`,'ok');
+      log(`⚠ start a worker process on ${host}:${port} or health check will mark it offline`,'warn');
+      toast(`${id} registered ✓`);await pollLive();
+    }catch(e){log('register failed: '+e.message,'err');toast('register failed');}
+  }else{
+    if(SIM.workers.find(w=>w.id===id)){toast('id exists');return;}
+    if(SIM.workers.find(w=>w.port===port)){toast('port in use');return;}
+    SIM.workers.push({id,host,port,weight,healthy:true,active:0,total:0,latency:50,slow:false,error:false,color:workerColor(SIM.workers.length)});
+    log(`${id} registered → ${host}:${port}  [simulation]`,'ok');toast(`${id} registered`);
+  }
+  ['f-id','f-port','f-host','f-weight'].forEach(i=>document.getElementById(i).value='');
+  renderAll();
+}
+async function removeWorker(id){
+  if(MODE==='live'){
+    try{await apiDelete(CFG.registryUrl,'/api/registry/deregister/'+id);log(`${id} deregistered  [live]`,'warn');toast(`${id} removed`);await pollLive();}
+    catch(e){log('deregister failed: '+e.message,'err');}
+  }else{
+    SIM.workers=SIM.workers.filter(w=>w.id!==id);log(`${id} removed  [simulation]`,'warn');toast(`${id} removed`);renderAll();
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+// WORKER CONTROLS
+// ══════════════════════════════════════════════════════════
+async function toggleSlow(id){
+  const workers=MODE==='live'?LIVE.workers:SIM.workers;
+  const w=workers.find(x=>x.id===id);if(!w)return;
+  w.slow=!w.slow;
+  if(MODE==='live'){
+    try{await apiPost(`http://${w.host}:${w.port}`,'/simulate/slow',{enabled:w.slow,delayMs:3000});
+    log(`${id} slow ${w.slow?'ON':'OFF'}  [live]`,'warn');}
+    catch(e){log('slow toggle failed: '+e.message,'err');}
+  }else log(`${id} slow ${w.slow?'ON':'OFF'}  [simulation]`,'warn');
+  toast(`${id} slow ${w.slow?'on':'off'}`);renderAll();
+}
+async function toggleError(id){
+  const workers=MODE==='live'?LIVE.workers:SIM.workers;
+  const w=workers.find(x=>x.id===id);if(!w)return;
+  w.error=!w.error;
+  if(MODE==='live'){
+    try{await apiPost(`http://${w.host}:${w.port}`,'/simulate/error',{enabled:w.error});
+    log(`${id} error ${w.error?'ON':'OFF'}  [live]`,'err');}
+    catch(e){log('error toggle failed: '+e.message,'err');}
+  }else log(`${id} error ${w.error?'ON':'OFF'}  [simulation]`,'err');
+  toast(`${id} errors ${w.error?'on':'off'}`);renderAll();
+}
+async function toggleKill(id){
+  const workers=MODE==='live'?LIVE.workers:SIM.workers;
+  const w=workers.find(x=>x.id===id);if(!w)return;
+  if(MODE==='live'){
+    if(w.healthy){
+      try{await apiDelete(CFG.registryUrl,'/api/registry/deregister/'+w.id);log(`${id} deregistered  [live]`,'err');toast(`${id} deregistered`);}
+      catch(e){log('deregister failed: '+e.message,'warn');w.healthy=false;}
+    }else{
+      try{
+        const r=await apiPost(CFG.registryUrl,'/api/registry/register',{host:w.host,port:w.port,weight:w.weight});
+        if(r.ok)log(`${id} re-registered  [live]`,'ok');else throw new Error(await r.text());
+        toast(`${id} re-registered`);
+      }catch(e){log('re-register failed: '+e.message,'err');toast('failed: '+e.message);}
+    }
+    await pollLive();
+  }else{
+    w.healthy=!w.healthy;
+    if(!w.healthy){w.active=0;log(`${id} killed  [simulation]`,'err');}
+    else{w.latency=48;log(`${id} restarted  [simulation]`,'ok');}
+    toast(`${id} ${w.healthy?'online':'offline'}`);renderAll();
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+// RENDER
+// ══════════════════════════════════════════════════════════
+function renderAlgos(){
+  const{strategy}=getState();
+  const uiActive=MODE==='live'?(ALGO_BY_LB[strategy]||strategy):strategy;
+  const g=document.getElementById('algo-grid');g.innerHTML='';
+  ALGOS.forEach(a=>{
+    const isNew=NEW_ALGOS.includes(a.name);
+    const isAutoChosen=AUTO_MODE&&uiActive===a.name;
+    const d=document.createElement('div');
+    d.className='algo-card'+(a.name===uiActive?' active':'')+(isAutoChosen?' auto-active':'')+(switchingStrategy?' algo-switching':'');
+    d.title=ALGO_DESCS[a.name]||'';
+    const badges=(isAutoChosen?'<span class="badge-auto">auto</span>':'')+(isNew?'<span class="badge-new"></span>':'');
+    d.innerHTML=`<div class="algo-name">${a.name} ${badges}</div><div class="algo-tag">${a.tag}</div>`;
+    d.onclick=()=>{if(AUTO_MODE){toggleAuto();}setStrategy(a.name);};
+    g.appendChild(d);
+  });
+}
+
+function renderWorkers(){
+  const{workers}=getState();
+  const g=document.getElementById('workers-grid');g.innerHTML='';
+  if(!workers.length){g.innerHTML='<div style="grid-column:1/-1;font-size:12px;color:var(--txt2);padding:1rem 0">no workers registered</div>';return;}
+  workers.forEach(w=>{
+    const util=Math.min(100,Math.round(w.active/Math.max(1,workers.length)*100));
+    const barColor=util<40?'#1D9E75':util<75?'#EF9F27':'#E24B4A';
+    const dotCls=!w.healthy?'dead':w.error?'err':w.slow?'warn':'ok';
+    const statusTxt=!w.healthy?(w.manualReg?'⚠ no process — health check failed':'offline'):w.error?'error mode':w.slow?'slow mode':w.manualReg?'registered (no process)':'healthy';
+    const displayId=w.id.length>16?`worker @ :${w.port}`:w.id;
+    const d=document.createElement('div');
+    d.className='wcard'+(!w.healthy?' dead':'')+(w.slow?' slow':'')+(w.error?' error':'');
+    d.innerHTML=`
+      <div class="wcard-ripple" id="wr-${w.id}"></div>
+      <div class="wcard-top">
+        <div><div class="wcard-id" title="${w.id}">${displayId}</div>
+        <div class="wcard-addr">${w.host}:${w.port} · w:${w.weight}</div></div>
+        <div class="sdot ${dotCls}"></div>
+      </div>
+      <div class="wcard-stats">
+        <div class="wstat"><b>${w.active}</b>active</div>
+        <div class="wstat"><b>${w.total}</b>total</div>
+        <div class="wstat"><b>${w.latency}ms</b>latency</div>
+      </div>
+      <div class="wcard-bar"><div class="wbar-fill" style="width:${util}%;background:${barColor}"></div></div>
+      <div class="wcard-status${w.healthy?'':' dead'}">${statusTxt}${MODE==='live'?' · live':''}</div>`;
+    g.appendChild(d);
+  });
+}
+
+function renderControls(){
+  const{workers}=getState();
+  const el=document.getElementById('wctrl-list');el.innerHTML='';
+  if(!workers.length){el.innerHTML='<div style="font-size:12px;color:var(--txt2)">no workers</div>';return;}
+  workers.forEach(w=>{
+    const row=document.createElement('div');row.className='wctrl-row';
+    row.innerHTML=`<span class="wctrl-name">${w.id.length>10?':'+w.port:w.id}</span>`;
+    const mk=(cls,icon,lbl,fn)=>{const b=document.createElement('button');b.className='cbtn '+cls;b.innerHTML=`<i class="ti ${icon}"></i>${lbl}`;b.onclick=fn;return b;};
+    row.appendChild(mk(w.slow?'slow':'','ti-clock',w.slow?'fast':'slow',()=>toggleSlow(w.id)));
+    row.appendChild(mk(w.error?'err':'','ti-bug',w.error?'fix':'errors',()=>toggleError(w.id)));
+    row.appendChild(mk(w.healthy?'kill':'live',w.healthy?'ti-player-stop':'ti-player-play',w.healthy?'kill':'restart',()=>toggleKill(w.id)));
+    const rm=document.createElement('button');rm.className='cbtn';rm.innerHTML='<i class="ti ti-trash"></i>';rm.title='remove';rm.onclick=()=>removeWorker(w.id);
+    row.appendChild(rm);el.appendChild(row);
+  });
+}
+
+function renderDist(){
+  const{workers}=getState();
+  const bar=document.getElementById('dist-bar'),leg=document.getElementById('dist-legend');
+  const tot=workers.reduce((s,w)=>s+w.total,0)||1;
+  bar.innerHTML='';leg.innerHTML='';
+  workers.forEach(w=>{
+    const seg=document.createElement('div');seg.className='dist-seg';
+    seg.style.cssText=`flex:${Math.max(.1,w.total)};background:${w.color}`;bar.appendChild(seg);
+    const pct=Math.round(w.total/tot*100);
+    const shortId=w.id.length>12?`:${w.port} …${w.id.slice(-6)}`:w.id;
+    const li=document.createElement('div');li.className='dist-item';
+    li.innerHTML=`<span class="dist-dot" style="background:${w.color}"></span>${shortId}: ${pct}%`;leg.appendChild(li);
+  });
+}
+
+function renderMetrics(){
+  const{workers,total,latencies,strategy}=getState();
+  const healthy=workers.filter(w=>w.healthy).length,tot=workers.length;
+  document.getElementById('mv-total').textContent=total;
+  document.getElementById('mv-health').textContent=`${healthy}/${tot}`;
+  const hs=document.getElementById('ms-health');
+  hs.className='met-sub '+(healthy===tot?'ok':healthy>0?'warn':'err');
+  hs.textContent=healthy===tot?'all online':healthy>0?`${tot-healthy} offline`:'all down';
+  const badge=document.getElementById('sys-badge');
+  if(MODE==='live'){
+    if(healthy===0)setBadge('down','all workers down');
+    else if(healthy<tot)setBadge('warn','degraded');
+    else setBadge('online','system online');
+  }
+  if(latencies.length){
+    const avg=Math.round(latencies.reduce((a,b)=>a+b,0)/latencies.length);
+    document.getElementById('mv-lat').textContent=avg+'ms';
+    const ls=document.getElementById('ms-lat');
+    ls.className='met-sub '+(avg<80?'ok':avg<200?'warn':'err');
+    ls.textContent=avg<80?'fast response':avg<200?'moderate':'high latency';
+  }
+  const uiStrat=MODE==='live'?(ALGO_BY_LB[strategy]||strategy):strategy;
+  document.getElementById('mv-strat').textContent=AUTO_MODE?'🤖 '+uiStrat:uiStrat;
+  document.getElementById('ms-strat').textContent=AUTO_MODE?'auto mode active':MODE==='live'?'live backend':'simulation';
+}
+
+function renderAll(){renderAlgos();renderWorkers();renderControls();renderDist();renderMetrics();}
+
+// ══════════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════════
+function init(){
+  log('registry service started  :3001','ok');
+  log('load balancer started  :3000','ok');
+  SIM.workers.forEach(w=>log(`${w.id} registered (sim) → ${w.host}:${w.port}`,'ok'));
+  log('strategy engine ready — 11 strategies loaded','ok');
+  log('new: consistent-hashing · latency-based · resource-aware · adaptive · jiq','info');
+  log('tip: click "auto select" to let the system choose the best strategy','info');
+  setBadge('online','simulation mode');
+  renderAll();
+  showAlgoInfo('round-robin');
+  // silent auto-detect backend
+  setTimeout(async()=>{
+    try{
+      const r=await fetch('http://localhost:3001/health',{signal:AbortSignal.timeout(1500)});
+      if(r.ok){log('backend detected at localhost:3001 — click configure to connect','ok');setBadge('warn','backend detected');toast('backend detected! click configure');}
+    }catch(e){}
+  },800);
+}
+init();
+</script>
+</body>
+</html>

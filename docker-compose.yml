@@ -1,0 +1,119 @@
+version: '3.9'
+
+# -----------------------------------------------------------
+# Network مشترك — يسمح للخدمات بالتواصل مع بعضها
+# بداخل هذا الـ network، الخدمات تتحدث باسمها
+# مثلاً: load-balancer يتصل بـ registry عبر http://registry:3001
+# المفهوم: Service Discovery بدائي — الاسم = العنوان
+# -----------------------------------------------------------
+networks:
+  slb-network:
+    driver: bridge
+
+services:
+
+  # --------------------------------------------------------
+  # Registry Service
+  # --------------------------------------------------------
+  registry:
+    build:
+      context: .
+      dockerfile: packages/registry/Dockerfile
+    container_name: slb-registry
+    ports:
+      - "3001:3001"       # host:container
+    networks:
+      - slb-network
+    environment:
+      - PORT=3001
+      - NODE_ENV=development
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3001/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    restart: unless-stopped
+
+  # --------------------------------------------------------
+  # Load Balancer Service
+  # يبدأ بعد الـ Registry لأنه يحتاجه
+  # --------------------------------------------------------
+  load-balancer:
+    build:
+      context: .
+      dockerfile: packages/load-balancer/Dockerfile
+    container_name: slb-lb
+    ports:
+      - "3000:3000"
+    networks:
+      - slb-network
+    environment:
+      - PORT=3000
+      - REGISTRY_URL=http://registry:3001   # اسم الخدمة في الـ network
+      - NODE_ENV=development
+    depends_on:
+      registry:
+        condition: service_healthy           # ينتظر حتى يكون الـ registry healthy
+    restart: unless-stopped
+
+  # --------------------------------------------------------
+  # Workers — ثلاث نسخ من نفس الكود، ports مختلفة
+  # المفهوم: هذا ما يُوزّع عليه الـ Load Balancer
+  # --------------------------------------------------------
+  worker-1:
+    build:
+      context: .
+      dockerfile: packages/worker/Dockerfile
+    container_name: slb-worker-1
+    ports:
+      - "4001:4000"
+    networks:
+      - slb-network
+    environment:
+      - PORT=4000
+      - WORKER_ID=worker-1
+      - REGISTRY_URL=http://registry:3001
+      - NODE_ENV=development
+    depends_on:
+      registry:
+        condition: service_healthy
+    restart: unless-stopped
+
+  worker-2:
+    build:
+      context: .
+      dockerfile: packages/worker/Dockerfile
+    container_name: slb-worker-2
+    ports:
+      - "4002:4000"
+    networks:
+      - slb-network
+    environment:
+      - PORT=4000
+      - WORKER_ID=worker-2
+      - REGISTRY_URL=http://registry:3001
+      - NODE_ENV=development
+    depends_on:
+      registry:
+        condition: service_healthy
+    restart: unless-stopped
+
+  worker-3:
+    build:
+      context: .
+      dockerfile: packages/worker/Dockerfile
+    container_name: slb-worker-3
+    ports:
+      - "4003:4000"
+    networks:
+      - slb-network
+    environment:
+      - PORT=4000
+      - WORKER_ID=worker-3
+      - REGISTRY_URL=http://registry:3001
+      - NODE_ENV=development
+    depends_on:
+      registry:
+        condition: service_healthy
+    restart: unless-stopped

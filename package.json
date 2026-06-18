@@ -1,0 +1,25 @@
+{
+  "name": "slb-platform",
+  "version": "1.0.0",
+  "description": "Smart Load Balancer Platform — Distributed Systems Project",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "shared"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces",
+    "dev": "docker compose up --build",
+    "dev:registry": "npm run dev -w packages/registry",
+    "dev:lb": "npm run dev -w packages/load-balancer",
+    "dev:worker": "npm run dev -w packages/worker",
+    "lint": "npm run lint --workspaces --if-present"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.9.1"
+  }
+}
