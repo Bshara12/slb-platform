@@ -63,6 +63,21 @@ Client ───────► Load Balancer (Port 3000)
      Port 4001   Port 4002   Port 4003
 ```
 
+## Key Technical Decisions
+
+Strategy Pattern for algorithm switching:
+Allows adding new balancing algorithms without 
+modifying existing code — runtime switch with 
+zero downtime.
+
+Singleton for Registry:
+Ensures one source of truth for all registered 
+workers across the system.
+
+Exponential Backoff on failure:
+Prevents retry storms when a worker goes down.
+
+
 ## How it works
 
 1. Workers register themselves in the Registry.
@@ -122,4 +137,5 @@ Workers:
 - Auto scaling
 - Advanced monitoring
 
-  
+## Demo Video
+[Watch Demo](https://docs.google.com/videos/d/1FflbY5xvaTsFfYH0ALz-crgB8N5l0YiFgsraMgS0nlU/edit?usp=sharing)
